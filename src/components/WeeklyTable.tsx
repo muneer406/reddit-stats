@@ -11,30 +11,7 @@ interface Props {
   settings: AppSettings;
 }
 
-function MiniProg({
-  val,
-  goal,
-  color,
-}: {
-  val: number;
-  goal: number;
-  color: string;
-}) {
-  const pct = goal > 0 ? Math.max(0, Math.min((val / goal) * 100, 100)) : 0;
-  return (
-    <div>
-      <div className="prog-track" style={{ height: 8 }}>
-        <div
-          className="prog-fill"
-          style={{
-            width: `${pct}%`,
-            background: `linear-gradient(90deg, ${color}, ${color}99)`,
-          }}
-        />
-      </div>
-    </div>
-  );
-}
+// Weekly table no longer shows per-week progress bars; keep numeric columns only
 
 export default function WeeklyTable({ analytics, settings }: Props) {
   const cw = getCurrentWeek();
@@ -57,8 +34,6 @@ export default function WeeklyTable({ analytics, settings }: Props) {
               <th style={{ textAlign: "right" }}>Keyword Likes</th>
               <th style={{ textAlign: "right" }}>Average Length</th>
               <th style={{ textAlign: "right" }}>% Keyword</th>
-              <th style={{ textAlign: "center" }}>Comments Progress</th>
-              <th style={{ textAlign: "center" }}>Keyword Progress</th>
             </tr>
           </thead>
           <tbody>
@@ -121,20 +96,6 @@ export default function WeeklyTable({ analytics, settings }: Props) {
                   </td>
                   <td style={{ textAlign: "right", color }} className="mono">
                     {pct}%
-                  </td>
-                  <td style={{ textAlign: "center" }}>
-                    <MiniProg
-                      val={w.comments}
-                      goal={settings.weeklyCommentGoal}
-                      color="var(--neon-cyan)"
-                    />
-                  </td>
-                  <td style={{ textAlign: "center" }}>
-                    <MiniProg
-                      val={w.keyword}
-                      goal={settings.weeklyKeywordGoal}
-                      color="var(--neon-purple)"
-                    />
                   </td>
                 </tr>
               );

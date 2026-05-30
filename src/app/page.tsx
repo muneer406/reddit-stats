@@ -268,9 +268,17 @@ export default function Home() {
   }, [scanActive, doFetch, usernames]);
 
   const currentWeek = getCurrentWeek();
+  const [topKeywordOnly, setTopKeywordOnly] = useState(false);
 
   const now = new Date();
   const timeStr = now.toISOString().replace("T", " ").slice(0, 19) + " UTC";
+
+  // derive highest comment this week from processed data when available
+  const highestThisWeek = fetchState.analytics
+    ? (fetchState.analytics.processed || [])
+        .filter((c) => c.week === currentWeek)
+        .sort((a, b) => b.ups - a.ups)[0] || null
+    : null;
 
   return (
     <div className="page-shell">
@@ -500,19 +508,243 @@ export default function Home() {
 
           {settings.showTopComments && (
             <>
-              <TopComments analytics={fetchState.analytics} timeframe="week" />
-              <TopComments analytics={fetchState.analytics} timeframe="all" />
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                <div
+                  className="mono"
+                  style={{
+                    color: "var(--text-secondary)",
+                    fontSize: "0.72rem",
+                  }}
+                >
+                  Top Comments Filter
+                </div>
+                <label className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={topKeywordOnly}
+                    onChange={() => setTopKeywordOnly((v) => !v)}
+                  />
+                  <span className="toggle-track" />
+                  <span className="toggle-thumb" />
+                </label>
+                <div
+                  className="mono"
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  {topKeywordOnly ? "Keyword only" : "All comments"}
+                </div>
+              </div>
+
               <TopComments
                 analytics={fetchState.analytics}
-                keywordOnly
                 timeframe="week"
+                keywordOnly={topKeywordOnly}
               />
               <TopComments
                 analytics={fetchState.analytics}
-                keywordOnly
                 timeframe="all"
+                keywordOnly={topKeywordOnly}
               />
             </>
+          )}
+
+          {/* Top Comment Detail: highest overall and highest this week */}
+          {settings.showCommentDetails && (
+            <div style={{ display: "grid", gap: "0.75rem" }}>
+              {fetchState.analytics.highest_comment && (
+                <div className="panel fade-up">
+                  <div className="panel-title">
+                    TOP_COMMENT // HIGHEST_UPVOTED (Overall)
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "auto 1fr",
+                      gap: "0.3rem 1.5rem",
+                      marginBottom: "0.75rem",
+                    }}
+                  >
+                    {[
+                      [
+                        "SCORE",
+                        fetchState.analytics.highest_comment.ups,
+                        "var(--neon-green)",
+                      ],
+                      [
+                        "SUBREDDIT",
+                        `r/${fetchState.analytics.highest_comment.subreddit}`,
+                        "var(--neon-teal)",
+                      ],
+                      [
+                        "DATE",
+                        fetchState.analytics.highest_comment.date,
+                        "var(--text-primary)",
+                      ],
+                    ].map(([k, v, c]) => (
+                      <>
+                        <span
+                          key={`k-${k}`}
+                          className="mono"
+                          style={{
+                            fontSize: "0.6rem",
+                            color: "var(--text-secondary)",
+                            alignSelf: "center",
+                          }}
+                        >
+                          {k}
+                        </span>
+                        <span
+                          key={`v-${k}`}
+                          className="mono"
+                          style={{ fontSize: "0.75rem", color: c as string }}
+                        >
+                          {v as string | number}
+                        </span>
+                      </>
+                    ))}
+                    <span
+                      className="mono"
+                      style={{
+                        fontSize: "0.6rem",
+                        color: "var(--text-secondary)",
+                        alignSelf: "center",
+                      }}
+                    >
+                      LINK
+                    </span>
+                    <a
+                      href={fetchState.analytics.highest_comment.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mono"
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "var(--neon-cyan)",
+                        wordBreak: "break-all",
+                      }}
+                    >
+                      {fetchState.analytics.highest_comment.link}
+                    </a>
+                  </div>
+                  <div
+                    className="mono"
+                    style={{
+                      padding: "0.75rem 1rem",
+                      background: "var(--bg-void)",
+                      border: "1px solid var(--border)",
+                      borderLeft: "2px solid var(--neon-teal)",
+                      fontSize: "0.75rem",
+                      lineHeight: 1.6,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      color: "var(--text-primary)",
+                      maxHeight: 300,
+                      overflowY: "auto",
+                    }}
+                  >
+                    {fetchState.analytics.highest_comment.body}
+                  </div>
+                </div>
+              )}
+
+              {highestThisWeek && (
+                <div className="panel fade-up">
+                  <div className="panel-title">
+                    TOP_COMMENT // HIGHEST_UPVOTED (This Week)
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "auto 1fr",
+                      gap: "0.3rem 1.5rem",
+                      marginBottom: "0.75rem",
+                    }}
+                  >
+                    {[
+                      ["SCORE", highestThisWeek.ups, "var(--neon-green)"],
+                      [
+                        "SUBREDDIT",
+                        `r/${highestThisWeek.subreddit}`,
+                        "var(--neon-teal)",
+                      ],
+                      ["DATE", highestThisWeek.date, "var(--text-primary)"],
+                    ].map(([k, v, c]) => (
+                      <>
+                        <span
+                          key={`k2-${k}`}
+                          className="mono"
+                          style={{
+                            fontSize: "0.6rem",
+                            color: "var(--text-secondary)",
+                            alignSelf: "center",
+                          }}
+                        >
+                          {k}
+                        </span>
+                        <span
+                          key={`v2-${k}`}
+                          className="mono"
+                          style={{ fontSize: "0.75rem", color: c as string }}
+                        >
+                          {v as string | number}
+                        </span>
+                      </>
+                    ))}
+                    <span
+                      className="mono"
+                      style={{
+                        fontSize: "0.6rem",
+                        color: "var(--text-secondary)",
+                        alignSelf: "center",
+                      }}
+                    >
+                      LINK
+                    </span>
+                    <a
+                      href={highestThisWeek.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mono"
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "var(--neon-cyan)",
+                        wordBreak: "break-all",
+                      }}
+                    >
+                      {highestThisWeek.link}
+                    </a>
+                  </div>
+                  <div
+                    className="mono"
+                    style={{
+                      padding: "0.75rem 1rem",
+                      background: "var(--bg-void)",
+                      border: "1px solid var(--border)",
+                      borderLeft: "2px solid var(--neon-teal)",
+                      fontSize: "0.75rem",
+                      lineHeight: 1.6,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      color: "var(--text-primary)",
+                      maxHeight: 300,
+                      overflowY: "auto",
+                    }}
+                  >
+                    {highestThisWeek.body}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           <InsightsPanel
@@ -520,104 +752,6 @@ export default function Home() {
             settings={settings}
             currentWeek={currentWeek}
           />
-
-          {/* Top Comment Detail */}
-          {settings.showCommentDetails &&
-            fetchState.analytics.highest_comment && (
-              <div className="panel fade-up">
-                <div className="panel-title">
-                  TOP_COMMENT // HIGHEST_UPVOTED
-                </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "auto 1fr",
-                    gap: "0.3rem 1.5rem",
-                    marginBottom: "0.75rem",
-                  }}
-                >
-                  {[
-                    [
-                      "SCORE",
-                      fetchState.analytics.highest_comment.ups,
-                      "var(--neon-green)",
-                    ],
-                    [
-                      "SUBREDDIT",
-                      `r/${fetchState.analytics.highest_comment.subreddit}`,
-                      "var(--neon-teal)",
-                    ],
-                    [
-                      "DATE",
-                      fetchState.analytics.highest_comment.date,
-                      "var(--text-primary)",
-                    ],
-                  ].map(([k, v, c]) => (
-                    <>
-                      <span
-                        key={`k-${k}`}
-                        className="mono"
-                        style={{
-                          fontSize: "0.6rem",
-                          color: "var(--text-secondary)",
-                          alignSelf: "center",
-                        }}
-                      >
-                        {k}
-                      </span>
-                      <span
-                        key={`v-${k}`}
-                        className="mono"
-                        style={{ fontSize: "0.75rem", color: c as string }}
-                      >
-                        {v as string | number}
-                      </span>
-                    </>
-                  ))}
-                  <span
-                    className="mono"
-                    style={{
-                      fontSize: "0.6rem",
-                      color: "var(--text-secondary)",
-                      alignSelf: "center",
-                    }}
-                  >
-                    LINK
-                  </span>
-                  <a
-                    href={fetchState.analytics.highest_comment.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mono"
-                    style={{
-                      fontSize: "0.7rem",
-                      color: "var(--neon-cyan)",
-                      wordBreak: "break-all",
-                    }}
-                  >
-                    {fetchState.analytics.highest_comment.link}
-                  </a>
-                </div>
-                <div
-                  className="mono"
-                  style={{
-                    padding: "0.75rem 1rem",
-                    background: "var(--bg-void)",
-                    border: "1px solid var(--border)",
-                    borderLeft: "2px solid var(--neon-teal)",
-                    fontSize: "0.75rem",
-                    lineHeight: 1.6,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    color: "var(--text-primary)",
-                    maxHeight: 300,
-                    overflowY: "auto",
-                  }}
-                >
-                  {fetchState.analytics.highest_comment.body}
-                </div>
-              </div>
-            )}
         </div>
       )}
 

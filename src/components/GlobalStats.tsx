@@ -88,7 +88,7 @@ export default function GlobalStats({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(6, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
           gap: "0.6rem",
         }}
       >
