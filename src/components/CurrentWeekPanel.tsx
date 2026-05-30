@@ -7,16 +7,42 @@ interface Props {
   settings: AppSettings;
 }
 
-function ProgBar({ val, goal, color }: { val: number; goal: number; color: string }) {
+function ProgBar({
+  val,
+  goal,
+  color,
+}: {
+  val: number;
+  goal: number;
+  color: string;
+}) {
   const pct = Math.min((val / goal) * 100, 100);
   const done = pct >= 100;
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-        <span className="mono" style={{ fontSize: "0.62rem", color: done ? "var(--neon-green)" : color }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: "0.3rem",
+        }}
+      >
+        <span
+          className="mono"
+          style={{
+            fontSize: "0.62rem",
+            color: done ? "var(--neon-green)" : color,
+          }}
+        >
           {val}/{goal}
         </span>
-        <span className="mono" style={{ fontSize: "0.62rem", color: done ? "var(--neon-green)" : "var(--text-secondary)" }}>
+        <span
+          className="mono"
+          style={{
+            fontSize: "0.62rem",
+            color: done ? "var(--neon-green)" : "var(--text-secondary)",
+          }}
+        >
           {pct.toFixed(0)}%{done ? " [DONE]" : ""}
         </span>
       </div>
@@ -47,36 +73,88 @@ export default function CurrentWeekPanel({ analytics, settings }: Props) {
     <div className="panel fade-up">
       <div className="panel-corner tl" />
       <div className="panel-corner br" />
-      <div className="panel-title">
-        CURRENT_WEEK // {formatWeekDisplay(cw)}
-      </div>
+      <div className="panel-title">CURRENT_WEEK // {formatWeekDisplay(cw)}</div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1.25rem", marginBottom: "1.25rem" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+          gap: "1.25rem",
+          marginBottom: "1.25rem",
+        }}
+      >
         {[
-          { val: comments, label: "COMMENTS", color: "var(--neon-teal)" },
-          { val: keyword, label: "KEYWORD_HITS", color: "var(--neon-amber)" },
-          { val: likes.toLocaleString(), label: "LIKES", color: "var(--neon-green)" },
-          { val: kwLikes.toLocaleString(), label: "KW_LIKES", color: "var(--neon-purple)" },
+          { val: comments, label: "Comments", color: "var(--neon-teal)" },
+          {
+            val: keyword,
+            label: `${settings.searchString} Mentions`,
+            color: "var(--neon-amber)",
+          },
+          {
+            val: likes.toLocaleString(),
+            label: "Likes",
+            color: "var(--neon-green)",
+          },
+          {
+            val: kwLikes.toLocaleString(),
+            label: `Keyword Likes`,
+            color: "var(--neon-purple)",
+          },
         ].map(({ val, label, color }) => (
-          <div key={label}>
-            <div className="stat-val" style={{ color, fontSize: "1.4rem" }}>{val}</div>
-            <div className="stat-lbl">{label}</div>
+          <div key={label} style={{ overflow: "hidden" }}>
+            <div className="stat-val" style={{ color, fontSize: "1.4rem" }}>
+              {val}
+            </div>
+            <div
+              className="stat-lbl"
+              style={{
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {label}
+            </div>
           </div>
         ))}
       </div>
 
       <div style={{ display: "grid", gap: "0.75rem" }}>
         <div>
-          <div className="mono" style={{ fontSize: "0.6rem", color: "var(--text-secondary)", marginBottom: "0.3rem", letterSpacing: "0.1em" }}>
+          <div
+            className="mono"
+            style={{
+              fontSize: "0.6rem",
+              color: "var(--text-secondary)",
+              marginBottom: "0.3rem",
+              letterSpacing: "0.1em",
+            }}
+          >
             COMMENT_GOAL
           </div>
-          <ProgBar val={comments} goal={settings.weeklyCommentGoal} color="var(--neon-cyan)" />
+          <ProgBar
+            val={comments}
+            goal={settings.weeklyCommentGoal}
+            color="var(--neon-cyan)"
+          />
         </div>
         <div>
-          <div className="mono" style={{ fontSize: "0.6rem", color: "var(--text-secondary)", marginBottom: "0.3rem", letterSpacing: "0.1em" }}>
+          <div
+            className="mono"
+            style={{
+              fontSize: "0.6rem",
+              color: "var(--text-secondary)",
+              marginBottom: "0.3rem",
+              letterSpacing: "0.1em",
+            }}
+          >
             KEYWORD_GOAL
           </div>
-          <ProgBar val={keyword} goal={settings.weeklyKeywordGoal} color="var(--neon-purple)" />
+          <ProgBar
+            val={keyword}
+            goal={settings.weeklyKeywordGoal}
+            color="var(--neon-purple)"
+          />
         </div>
       </div>
     </div>

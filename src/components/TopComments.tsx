@@ -6,13 +6,22 @@ interface Props {
   analytics: AnalyticsResult;
   keywordOnly?: boolean;
   limit?: number;
+  timeframe?: "week" | "all"; // 'week' = this week, 'all' = overall
 }
 
-export default function TopComments({ analytics, keywordOnly, limit = 10 }: Props) {
+export default function TopComments({
+  analytics,
+  keywordOnly,
+  limit = 10,
+  timeframe = "week",
+}: Props) {
   const cw = getCurrentWeek();
   const lw = getLastWeek();
 
-  let filtered = analytics.processed.filter((c) => c.week === cw);
+  let filtered =
+    timeframe === "all"
+      ? analytics.processed
+      : analytics.processed.filter((c) => c.week === cw);
   if (keywordOnly) filtered = filtered.filter((c) => c.keyword);
 
   const sorted = [...filtered].sort((a, b) => b.ups - a.ups).slice(0, limit);
@@ -31,7 +40,7 @@ export default function TopComments({ analytics, keywordOnly, limit = 10 }: Prop
     return "var(--text-primary)";
   }
 
-  const title = keywordOnly ? "TOP_KEYWORD_COMMENTS // THIS_WEEK" : "TOP_COMMENTS // THIS_WEEK";
+  const title = `${keywordOnly ? "Top Keyword Comments" : "Top Comments"} // ${timeframe === "all" ? "Overall" : "This Week"}`;
 
   return (
     <div className="panel fade-up">
@@ -42,7 +51,7 @@ export default function TopComments({ analytics, keywordOnly, limit = 10 }: Prop
             <tr>
               <th>#</th>
               <th style={{ textAlign: "right" }}>LIKES</th>
-              <th style={{ textAlign: "center" }}>KW</th>
+              <th style={{ textAlign: "center" }}>Keyword</th>
               <th>SUBREDDIT</th>
               <th>DATE</th>
               <th>PREVIEW</th>
@@ -50,30 +59,69 @@ export default function TopComments({ analytics, keywordOnly, limit = 10 }: Prop
           </thead>
           <tbody>
             {sorted.map((c, i) => (
-              <tr key={`${c.date}-${c.link}-${i}`}>
-                <td className="mono" style={{ color: "var(--text-dim)" }}>{String(i + 1).padStart(2, "0")}</td>
-                <td className="mono" style={{ textAlign: "right", color: "var(--neon-green)", fontWeight: 700 }}>{c.ups}</td>
+              <tr
+                key={`${c.date}-${c.link}-${i}`}
+                style={{ cursor: "pointer" }}
+                onClick={() => window.open(c.link, "_blank")}
+              >
+                <td className="mono" style={{ color: "var(--text-dim)" }}>
+                  {String(i + 1).padStart(2, "0")}
+                </td>
+                <td
+                  className="mono"
+                  style={{
+                    textAlign: "right",
+                    color: "var(--neon-green)",
+                    fontWeight: 700,
+                  }}
+                >
+                  {c.ups}
+                </td>
                 <td style={{ textAlign: "center" }}>
-                  {c.keyword
-                    ? <span style={{ color: "var(--neon-green)", fontFamily: "'Share Tech Mono'" }}>Y</span>
-                    : <span style={{ color: "var(--text-dim)", fontFamily: "'Share Tech Mono'" }}>N</span>}
+                  {c.keyword ? (
+                    <span
+                      style={{
+                        color: "var(--neon-green)",
+                        fontFamily: "'Share Tech Mono'",
+                      }}
+                    >
+                      Yes
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        color: "var(--text-dim)",
+                        fontFamily: "'Share Tech Mono'",
+                      }}
+                    >
+                      No
+                    </span>
+                  )}
                 </td>
                 <td className="mono">
                   <span style={{ color: "var(--neon-teal)" }}>r/</span>
-                  <span style={{ color: "var(--text-secondary)" }}>{c.subreddit}</span>
+                  <span style={{ color: "var(--text-secondary)" }}>
+                    {c.subreddit}
+                  </span>
                 </td>
-                <td className="mono" style={{ color: dateColor(c.date) }}>{c.date}</td>
-                <td style={{ maxWidth: 280, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  <a
-                    href={c.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <td className="mono" style={{ color: dateColor(c.date) }}>
+                  {c.date}
+                </td>
+                <td
+                  style={{
+                    maxWidth: 280,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span
                     className="mono"
-                    style={{ color: "var(--text-dim)", textDecoration: "none", fontSize: "0.68rem" }}
+                    style={{ color: "var(--text-dim)", fontSize: "0.68rem" }}
                     title={c.body}
                   >
                     {c.body.length > 80 ? c.body.slice(0, 80) + "..." : c.body}
-                  </a>
+                  </span>
                 </td>
               </tr>
             ))}

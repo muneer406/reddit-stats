@@ -100,6 +100,8 @@ export default function Home() {
   const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
   const [scanActive, setScanActive] = useState(false);
+  const lastScanAt = useRef<number>(0);
+  const COOLDOWN_MS = 10_000; // 10 seconds cooldown to avoid spamming
   const [tick, setTick] = useState(0);
 
   // Clock tick for terminal cursor effect
@@ -236,6 +238,18 @@ export default function Home() {
   );
 
   const toggleScanning = useCallback(() => {
+    // anti-spam cooldown
+    if (!scanActive && Date.now() - lastScanAt.current < COOLDOWN_MS) {
+      const wait = Math.ceil(
+        (COOLDOWN_MS - (Date.now() - lastScanAt.current)) / 1000,
+      );
+      setFetchState((s) => ({
+        ...s,
+        error: `Please wait ${wait}s before scanning again.`,
+      }));
+      return;
+    }
+
     if (scanActive) {
       abortRef.current?.abort();
       setScanActive(false);
@@ -243,7 +257,14 @@ export default function Home() {
     }
 
     setScanActive(true);
-    void doFetch(usernames, true);
+    lastScanAt.current = Date.now();
+    void doFetch(usernames, true)
+      .then(() => {
+        lastScanAt.current = Date.now();
+      })
+      .catch(() => {
+        lastScanAt.current = Date.now();
+      });
   }, [scanActive, doFetch, usernames]);
 
   const currentWeek = getCurrentWeek();
@@ -469,8 +490,8 @@ export default function Home() {
             analytics={fetchState.analytics}
             settings={settings}
           />
-          <DailyTables analytics={fetchState.analytics} />
-          <WeeklyTable analytics={fetchState.analytics} />
+          <DailyTables analytics={fetchState.analytics} settings={settings} />
+          <WeeklyTable analytics={fetchState.analytics} settings={settings} />
           <WeeklyComparison analytics={fetchState.analytics} />
 
           {settings.showSubredditTable && (
@@ -479,8 +500,18 @@ export default function Home() {
 
           {settings.showTopComments && (
             <>
-              <TopComments analytics={fetchState.analytics} />
-              <TopComments analytics={fetchState.analytics} keywordOnly />
+              <TopComments analytics={fetchState.analytics} timeframe="week" />
+              <TopComments analytics={fetchState.analytics} timeframe="all" />
+              <TopComments
+                analytics={fetchState.analytics}
+                keywordOnly
+                timeframe="week"
+              />
+              <TopComments
+                analytics={fetchState.analytics}
+                keywordOnly
+                timeframe="all"
+              />
             </>
           )}
 

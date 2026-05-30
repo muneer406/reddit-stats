@@ -16,44 +16,74 @@ function getRowColor(date: string, cw: string, lw: string): string {
   return "var(--text-primary)";
 }
 
-interface Props { analytics: AnalyticsResult; }
+interface Props {
+  analytics: AnalyticsResult;
+  settings?: { searchString?: string };
+}
 
-export default function DailyTables({ analytics }: Props) {
+export default function DailyTables({ analytics, settings }: Props) {
   const cw = getCurrentWeek();
   const lw = getLastWeek();
   const dates = Object.keys(analytics.daily_data).sort().reverse();
 
   if (dates.length === 0) return null;
 
+  const kwLabel = settings?.searchString
+    ? `${settings.searchString} Mentions`
+    : "Keyword Mentions";
+  const pctLabel = settings?.searchString
+    ? `% ${settings.searchString}`
+    : "% Keyword";
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }} className="fade-up">
+    <div className="panel-grid fade-up" style={{ gap: "0.75rem" }}>
       {/* Activity */}
       <div className="panel">
-        <div className="panel-title">DAILY_ACTIVITY</div>
+        <div className="panel-title">Daily Activity</div>
         <div style={{ overflowX: "auto" }}>
           <table className="data-table">
             <thead>
               <tr>
                 <th>DATE</th>
-                <th style={{ textAlign: "right" }}>CMT</th>
-                <th style={{ textAlign: "right" }}>KW</th>
-                <th style={{ textAlign: "right" }}>%KW</th>
-                <th style={{ textAlign: "right" }}>AVG_LEN</th>
+                <th style={{ textAlign: "right" }}>Comments</th>
+                <th style={{ textAlign: "right" }}>{kwLabel}</th>
+                <th style={{ textAlign: "right" }}>{pctLabel}</th>
+                <th style={{ textAlign: "right" }}>Average Length</th>
               </tr>
             </thead>
             <tbody>
               {dates.map((date) => {
                 const d = analytics.daily_data[date];
                 const color = getRowColor(date, cw, lw);
-                const pct = d.comments ? ((d.keyword / d.comments) * 100).toFixed(0) : "0";
-                const avgLen = d.comments ? Math.round(d.total_length / d.comments) : 0;
+                const pct = d.comments
+                  ? ((d.keyword / d.comments) * 100).toFixed(0)
+                  : "0";
+                const avgLen = d.comments
+                  ? Math.round(d.total_length / d.comments)
+                  : 0;
                 return (
                   <tr key={date}>
-                    <td style={{ color }} className="mono">{date}</td>
-                    <td style={{ textAlign: "right", color }} className="mono">{d.comments}</td>
-                    <td style={{ textAlign: "right", color: d.keyword > 0 ? "var(--neon-amber)" : color }} className="mono">{d.keyword}</td>
-                    <td style={{ textAlign: "right", color }} className="mono">{pct}%</td>
-                    <td style={{ textAlign: "right", color }} className="mono">{avgLen}</td>
+                    <td style={{ color }} className="mono">
+                      {date}
+                    </td>
+                    <td style={{ textAlign: "right", color }} className="mono">
+                      {d.comments}
+                    </td>
+                    <td
+                      style={{
+                        textAlign: "right",
+                        color: d.keyword > 0 ? "var(--neon-amber)" : color,
+                      }}
+                      className="mono"
+                    >
+                      {d.keyword}
+                    </td>
+                    <td style={{ textAlign: "right", color }} className="mono">
+                      {pct}%
+                    </td>
+                    <td style={{ textAlign: "right", color }} className="mono">
+                      {avgLen}
+                    </td>
                   </tr>
                 );
               })}
@@ -64,31 +94,55 @@ export default function DailyTables({ analytics }: Props) {
 
       {/* Engagement */}
       <div className="panel">
-        <div className="panel-title">DAILY_ENGAGEMENT</div>
+        <div className="panel-title">Daily Engagement</div>
         <div style={{ overflowX: "auto" }}>
           <table className="data-table">
             <thead>
               <tr>
                 <th>DATE</th>
-                <th style={{ textAlign: "right" }}>LIKES</th>
-                <th style={{ textAlign: "right" }}>KW_LIKES</th>
-                <th style={{ textAlign: "right" }}>AVG/CMT</th>
-                <th style={{ textAlign: "right" }}>AVG/KW</th>
+                <th style={{ textAlign: "right" }}>Likes</th>
+                <th style={{ textAlign: "right" }}>Keyword Likes</th>
+                <th style={{ textAlign: "right" }}>Average / Comment</th>
+                <th style={{ textAlign: "right" }}>Average / Keyword</th>
               </tr>
             </thead>
             <tbody>
               {dates.map((date) => {
                 const d = analytics.daily_data[date];
                 const color = getRowColor(date, cw, lw);
-                const avgLike = d.comments ? (d.likes / d.comments).toFixed(1) : "0";
-                const avgKw = d.keyword ? (d.keyword_likes / d.keyword).toFixed(1) : "—";
+                const avgLike = d.comments
+                  ? (d.likes / d.comments).toFixed(1)
+                  : "0";
+                const avgKw = d.keyword
+                  ? (d.keyword_likes / d.keyword).toFixed(1)
+                  : "—";
                 return (
                   <tr key={date}>
-                    <td style={{ color }} className="mono">{date}</td>
-                    <td style={{ textAlign: "right", color: "var(--neon-green)" }} className="mono">{d.likes.toLocaleString()}</td>
-                    <td style={{ textAlign: "right", color: d.keyword_likes > 0 ? "var(--neon-amber)" : color }} className="mono">{d.keyword_likes.toLocaleString()}</td>
-                    <td style={{ textAlign: "right", color }} className="mono">{avgLike}</td>
-                    <td style={{ textAlign: "right", color }} className="mono">{avgKw}</td>
+                    <td style={{ color }} className="mono">
+                      {date}
+                    </td>
+                    <td
+                      style={{ textAlign: "right", color: "var(--neon-green)" }}
+                      className="mono"
+                    >
+                      {d.likes.toLocaleString()}
+                    </td>
+                    <td
+                      style={{
+                        textAlign: "right",
+                        color:
+                          d.keyword_likes > 0 ? "var(--neon-amber)" : color,
+                      }}
+                      className="mono"
+                    >
+                      {d.keyword_likes.toLocaleString()}
+                    </td>
+                    <td style={{ textAlign: "right", color }} className="mono">
+                      {avgLike}
+                    </td>
+                    <td style={{ textAlign: "right", color }} className="mono">
+                      {avgKw}
+                    </td>
                   </tr>
                 );
               })}
