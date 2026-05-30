@@ -44,14 +44,21 @@ function MatrixRain() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    canvas.width = window.innerWidth;
-    canvas.height = 120;
-    const cols = Math.floor(canvas.width / 18);
-    const drops: number[] = Array(cols).fill(1);
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    resizeCanvas();
+
+    const cols = () => Math.floor(canvas.width / 18);
+    let drops: number[] = Array(cols()).fill(1);
     const chars = "01アイウエオカキクケコ█▓▒░ABCDEF";
 
     const draw = () => {
-      ctx.fillStyle = "rgba(1,4,9,0.18)";
+      if (!canvas || !ctx) return;
+      ctx.fillStyle = "rgba(1,4,9,0.12)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "rgba(0,255,157,0.55)";
       ctx.font = "12px 'Share Tech Mono', monospace";
@@ -63,23 +70,20 @@ function MatrixRain() {
       }
     };
 
+    const handleResize = () => {
+      resizeCanvas();
+      drops = Array(cols()).fill(1);
+    };
+
+    window.addEventListener("resize", handleResize);
     const interval = setInterval(draw, 60);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: "absolute",
-        top: 0, left: 0, right: 0,
-        width: "100%",
-        height: 120,
-        opacity: 0.5,
-        pointerEvents: "none",
-      }}
-    />
-  );
+  return <canvas ref={canvasRef} className="matrix-canvas" />;
 }
 
 export default function Home() {
@@ -117,9 +121,18 @@ export default function Home() {
       const searchKey = settings.searchString.toLowerCase();
 
       if (!skipCache) {
-        const { entry, stale } = getCache<AnalyticsResult>(usernamesToFetch, searchKey);
+        const { entry, stale } = getCache<AnalyticsResult>(
+          usernamesToFetch,
+          searchKey,
+        );
         if (entry) {
-          setFetchState({ loading: stale, error: null, analytics: entry.data, usernames: entry.usernames, cached: true });
+          setFetchState({
+            loading: stale,
+            error: null,
+            analytics: entry.data,
+            usernames: entry.usernames,
+            cached: true,
+          });
           if (!stale) return;
         }
       }
@@ -146,31 +159,77 @@ export default function Home() {
         const data = await res.json();
 
         if (!res.ok || !data.success) {
-          const { entry } = getCache<AnalyticsResult>(usernamesToFetch, searchKey);
+          const { entry } = getCache<AnalyticsResult>(
+            usernamesToFetch,
+            searchKey,
+          );
           if (entry) {
-            setFetchState({ loading: false, error: `API ERROR [${res.status}] — showing cached data`, analytics: entry.data, usernames: entry.usernames, cached: true });
+            setFetchState({
+              loading: false,
+              error: `API ERROR [${res.status}] — showing cached data`,
+              analytics: entry.data,
+              usernames: entry.usernames,
+              cached: true,
+            });
             return;
           }
-          setFetchState({ loading: false, error: data.error || `HTTP ${res.status}`, analytics: null, usernames: usernamesToFetch, cached: false });
+          setFetchState({
+            loading: false,
+            error: data.error || `HTTP ${res.status}`,
+            analytics: null,
+            usernames: usernamesToFetch,
+            cached: false,
+          });
           return;
         }
 
         const analytics: AnalyticsResult = data.analytics;
         setCache(usernamesToFetch, searchKey, analytics);
-        setFetchState({ loading: false, error: null, analytics, usernames: usernamesToFetch, errors: data.errors, stats: data.stats, cached: false });
+        setFetchState({
+          loading: false,
+          error: null,
+          analytics,
+          usernames: usernamesToFetch,
+          errors: data.errors,
+          stats: data.stats,
+          cached: false,
+        });
       } catch (err) {
         if (!mountedRef.current) return;
         if (err instanceof Error && err.name === "AbortError") {
-          setFetchState((prev) => ({ ...prev, loading: false, error: "Scan stopped" }));
+          setFetchState((prev) => ({
+            ...prev,
+            loading: false,
+            error: "Scan stopped",
+          }));
           return;
         }
         const msg = err instanceof Error ? err.message : "NETWORK_ERROR";
-        const { entry } = getCache<AnalyticsResult>(usernamesToFetch, searchKey);
+        const { entry } = getCache<AnalyticsResult>(
+          usernamesToFetch,
+          searchKey,
+        );
         if (entry) {
-          setFetchState({ loading: false, error: `${msg} — showing cached data`, analytics: entry.data, usernames: entry.usernames, cached: true });
+          setFetchState({
+            loading: false,
+            error: `${msg} — showing cached data`,
+            analytics: entry.data,
+            usernames: entry.usernames,
+            cached: true,
+          });
           return;
         }
-        setFetchState({ loading: false, error: msg, analytics: null, usernames: usernamesToFetch, cached: false });
+        setFetchState({
+          loading: false,
+          error: msg,
+          analytics: null,
+          usernames: usernamesToFetch,
+          cached: false,
+        });
+      } finally {
+        if (mountedRef.current && !controller.signal.aborted) {
+          setScanActive(false);
+        }
       }
     },
     [settings],
@@ -193,41 +252,91 @@ export default function Home() {
   const timeStr = now.toISOString().replace("T", " ").slice(0, 19) + " UTC";
 
   return (
-    <div style={{ position: "relative", zIndex: 1, maxWidth: 1200, margin: "0 auto", padding: "0 1rem 4rem" }}>
-
+    <div className="page-shell">
       {/* ── Header ── */}
-      <div style={{ position: "relative", marginBottom: "2rem", paddingBottom: "1.5rem", overflow: "hidden" }}>
+      <div
+        style={{
+          position: "relative",
+          marginBottom: "2rem",
+          paddingBottom: "1.5rem",
+          overflow: "hidden",
+        }}
+      >
         <MatrixRain />
 
         <div style={{ position: "relative", zIndex: 2, paddingTop: "1.5rem" }}>
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "1rem",
+            }}
+          >
             <div>
-              <div className="orbitron" style={{
-                fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
-                fontWeight: 900,
-                letterSpacing: "0.08em",
-                lineHeight: 1,
-                background: "linear-gradient(90deg, var(--neon-teal) 0%, var(--neon-green) 50%, var(--neon-cyan) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                textShadow: "none",
-                filter: "drop-shadow(0 0 12px rgba(0,255,213,0.5))",
-              }}>
+              <div
+                className="orbitron"
+                style={{
+                  fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                  lineHeight: 1,
+                  background:
+                    "linear-gradient(90deg, var(--neon-teal) 0%, var(--neon-green) 50%, var(--neon-cyan) 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  textShadow: "none",
+                  filter: "drop-shadow(0 0 12px rgba(0,255,213,0.5))",
+                }}
+              >
                 REDDIT.ANALYTICS
               </div>
-              <div className="mono" style={{ fontSize: "0.65rem", color: "var(--text-secondary)", marginTop: "0.3rem", letterSpacing: "0.12em" }}>
+              <div
+                className="mono"
+                style={{
+                  fontSize: "0.65rem",
+                  color: "var(--text-secondary)",
+                  marginTop: "0.3rem",
+                  letterSpacing: "0.12em",
+                }}
+              >
                 <span style={{ color: "var(--neon-teal)" }}>SYS</span>
-                &gt; MULTI-USER PROFILE ANALYSIS // SUNDAY-BASED WEEKLY AGGREGATION
+                &gt; MULTI-USER PROFILE ANALYSIS // SUNDAY-BASED WEEKLY
+                AGGREGATION
                 <span className="cursor-blink" />
               </div>
-              <div className="mono" style={{ fontSize: "0.55rem", color: "var(--text-dim)", marginTop: "0.15rem", letterSpacing: "0.1em" }}>
+              <div
+                className="mono"
+                style={{
+                  fontSize: "0.55rem",
+                  color: "var(--text-dim)",
+                  marginTop: "0.15rem",
+                  letterSpacing: "0.1em",
+                }}
+              >
                 {timeStr}
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.5rem",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
               {fetchState.cached && !fetchState.loading && (
-                <span className="mono" style={{ fontSize: "0.6rem", color: "var(--neon-amber)", border: "1px solid var(--neon-amber)", padding: "0.2rem 0.5rem" }}>
+                <span
+                  className="mono"
+                  style={{
+                    fontSize: "0.6rem",
+                    color: "var(--neon-amber)",
+                    border: "1px solid var(--neon-amber)",
+                    padding: "0.2rem 0.5rem",
+                  }}
+                >
                   CACHED
                 </span>
               )}
@@ -239,14 +348,35 @@ export default function Home() {
       {/* ── Input section ── */}
       <div className="panel-grid" style={{ marginBottom: "1.5rem" }}>
         <div className="panel">
-          <UserInput usernames={usernames} onChange={setUsernames} loading={fetchState.loading} />
+          <UserInput
+            usernames={usernames}
+            onChange={setUsernames}
+            loading={fetchState.loading}
+          />
         </div>
-        <SettingsPanel settings={settings} onChange={setSettings} open={settingsOpen} onToggle={() => setSettingsOpen(!settingsOpen)} />
+        <SettingsPanel
+          settings={settings}
+          onChange={setSettings}
+          open={settingsOpen}
+          onToggle={() => setSettingsOpen(!settingsOpen)}
+        />
       </div>
 
-      <div className="panel action-panel fade-up" style={{ marginBottom: "1.5rem" }}>
-        <div className="mono" style={{ minWidth: 240, color: "var(--text-secondary)", lineHeight: 1.4 }}>
-          {scanActive ? "Scan mode enabled. Press STOP to cancel." : "Press START SCAN to retrieve Reddit analytics using server-side OAuth."}
+      <div
+        className="panel action-panel fade-up"
+        style={{ marginBottom: "1.5rem" }}
+      >
+        <div
+          className="mono"
+          style={{
+            minWidth: 240,
+            color: "var(--text-secondary)",
+            lineHeight: 1.4,
+          }}
+        >
+          {scanActive
+            ? "Scan mode enabled. Press STOP to cancel."
+            : "Press START SCAN to retrieve Reddit analytics using server-side OAuth."}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
           <button
@@ -256,12 +386,17 @@ export default function Home() {
           >
             {fetchState.loading ? (
               <>
-                <span style={{
-                  display: "inline-block", width: 10, height: 10,
-                  border: "1.5px solid rgba(0,255,213,0.3)",
-                  borderTopColor: "var(--neon-teal)", borderRadius: "50%",
-                  animation: "spin 0.6s linear infinite",
-                }} />
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 10,
+                    height: 10,
+                    border: "1.5px solid rgba(0,255,213,0.3)",
+                    borderTopColor: "var(--neon-teal)",
+                    borderRadius: "50%",
+                    animation: "spin 0.6s linear infinite",
+                  }}
+                />
                 SCANNING...
               </>
             ) : scanActive ? (
@@ -273,7 +408,14 @@ export default function Home() {
           {fetchState.analytics && !fetchState.loading && (
             <button
               className="btn btn-ghost"
-              onClick={() => doFetch(fetchState.usernames.length > 0 ? fetchState.usernames : usernames, true)}
+              onClick={() =>
+                doFetch(
+                  fetchState.usernames.length > 0
+                    ? fetchState.usernames
+                    : usernames,
+                  true,
+                )
+              }
             >
               REFRESH
             </button>
@@ -283,12 +425,18 @@ export default function Home() {
 
       {/* ── Status messages ── */}
       {fetchState.error && (
-        <div className="alert alert-error fade-up" style={{ marginBottom: "1rem" }}>
+        <div
+          className="alert alert-error fade-up"
+          style={{ marginBottom: "1rem" }}
+        >
           [ERR] {fetchState.error}
         </div>
       )}
       {fetchState.cached && !fetchState.error && !fetchState.loading && (
-        <div className="alert alert-warn fade-up" style={{ marginBottom: "1rem" }}>
+        <div
+          className="alert alert-warn fade-up"
+          style={{ marginBottom: "1rem" }}
+        >
           [CACHE] Displaying cached data. Press [R] REFRESH for live data.
         </div>
       )}
@@ -298,7 +446,10 @@ export default function Home() {
         <div style={{ display: "grid", gap: "0.75rem" }}>
           {[120, 200, 160].map((h, i) => (
             <div key={i} className="panel">
-              <div className="skel" style={{ width: "30%", height: 10, marginBottom: 12 }} />
+              <div
+                className="skel"
+                style={{ width: "30%", height: 10, marginBottom: 12 }}
+              />
               <div className="skel" style={{ width: "100%", height: h }} />
             </div>
           ))}
@@ -308,13 +459,23 @@ export default function Home() {
       {/* ── Results ── */}
       {fetchState.analytics && (
         <div style={{ display: "grid", gap: "0.75rem" }}>
-          <GlobalStats analytics={fetchState.analytics} usernames={fetchState.usernames} errors={fetchState.errors} stats={fetchState.stats} />
-          <CurrentWeekPanel analytics={fetchState.analytics} settings={settings} />
+          <GlobalStats
+            analytics={fetchState.analytics}
+            usernames={fetchState.usernames}
+            errors={fetchState.errors}
+            stats={fetchState.stats}
+          />
+          <CurrentWeekPanel
+            analytics={fetchState.analytics}
+            settings={settings}
+          />
           <DailyTables analytics={fetchState.analytics} />
           <WeeklyTable analytics={fetchState.analytics} />
           <WeeklyComparison analytics={fetchState.analytics} />
 
-          {settings.showSubredditTable && <SubredditTable analytics={fetchState.analytics} />}
+          {settings.showSubredditTable && (
+            <SubredditTable analytics={fetchState.analytics} />
+          )}
 
           {settings.showTopComments && (
             <>
@@ -323,67 +484,146 @@ export default function Home() {
             </>
           )}
 
-          <InsightsPanel analytics={fetchState.analytics} settings={settings} currentWeek={currentWeek} />
+          <InsightsPanel
+            analytics={fetchState.analytics}
+            settings={settings}
+            currentWeek={currentWeek}
+          />
 
           {/* Top Comment Detail */}
-          {settings.showCommentDetails && fetchState.analytics.highest_comment && (
-            <div className="panel fade-up">
-              <div className="panel-title">TOP_COMMENT // HIGHEST_UPVOTED</div>
-              <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "0.3rem 1.5rem", marginBottom: "0.75rem" }}>
-                {[
-                  ["SCORE", fetchState.analytics.highest_comment.ups, "var(--neon-green)"],
-                  ["SUBREDDIT", `r/${fetchState.analytics.highest_comment.subreddit}`, "var(--neon-teal)"],
-                  ["DATE", fetchState.analytics.highest_comment.date, "var(--text-primary)"],
-                ].map(([k, v, c]) => (
-                  <>
-                    <span key={`k-${k}`} className="mono" style={{ fontSize: "0.6rem", color: "var(--text-secondary)", alignSelf: "center" }}>{k}</span>
-                    <span key={`v-${k}`} className="mono" style={{ fontSize: "0.75rem", color: c as string }}>{v as string | number}</span>
-                  </>
-                ))}
-                <span className="mono" style={{ fontSize: "0.6rem", color: "var(--text-secondary)", alignSelf: "center" }}>LINK</span>
-                <a href={fetchState.analytics.highest_comment.link} target="_blank" rel="noopener noreferrer"
-                  className="mono" style={{ fontSize: "0.7rem", color: "var(--neon-cyan)", wordBreak: "break-all" }}>
-                  {fetchState.analytics.highest_comment.link}
-                </a>
+          {settings.showCommentDetails &&
+            fetchState.analytics.highest_comment && (
+              <div className="panel fade-up">
+                <div className="panel-title">
+                  TOP_COMMENT // HIGHEST_UPVOTED
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "auto 1fr",
+                    gap: "0.3rem 1.5rem",
+                    marginBottom: "0.75rem",
+                  }}
+                >
+                  {[
+                    [
+                      "SCORE",
+                      fetchState.analytics.highest_comment.ups,
+                      "var(--neon-green)",
+                    ],
+                    [
+                      "SUBREDDIT",
+                      `r/${fetchState.analytics.highest_comment.subreddit}`,
+                      "var(--neon-teal)",
+                    ],
+                    [
+                      "DATE",
+                      fetchState.analytics.highest_comment.date,
+                      "var(--text-primary)",
+                    ],
+                  ].map(([k, v, c]) => (
+                    <>
+                      <span
+                        key={`k-${k}`}
+                        className="mono"
+                        style={{
+                          fontSize: "0.6rem",
+                          color: "var(--text-secondary)",
+                          alignSelf: "center",
+                        }}
+                      >
+                        {k}
+                      </span>
+                      <span
+                        key={`v-${k}`}
+                        className="mono"
+                        style={{ fontSize: "0.75rem", color: c as string }}
+                      >
+                        {v as string | number}
+                      </span>
+                    </>
+                  ))}
+                  <span
+                    className="mono"
+                    style={{
+                      fontSize: "0.6rem",
+                      color: "var(--text-secondary)",
+                      alignSelf: "center",
+                    }}
+                  >
+                    LINK
+                  </span>
+                  <a
+                    href={fetchState.analytics.highest_comment.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mono"
+                    style={{
+                      fontSize: "0.7rem",
+                      color: "var(--neon-cyan)",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    {fetchState.analytics.highest_comment.link}
+                  </a>
+                </div>
+                <div
+                  className="mono"
+                  style={{
+                    padding: "0.75rem 1rem",
+                    background: "var(--bg-void)",
+                    border: "1px solid var(--border)",
+                    borderLeft: "2px solid var(--neon-teal)",
+                    fontSize: "0.75rem",
+                    lineHeight: 1.6,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    color: "var(--text-primary)",
+                    maxHeight: 300,
+                    overflowY: "auto",
+                  }}
+                >
+                  {fetchState.analytics.highest_comment.body}
+                </div>
               </div>
-              <div className="mono" style={{
-                padding: "0.75rem 1rem",
-                background: "var(--bg-void)",
-                border: "1px solid var(--border)",
-                borderLeft: "2px solid var(--neon-teal)",
-                fontSize: "0.75rem",
-                lineHeight: 1.6,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                color: "var(--text-primary)",
-                maxHeight: 300,
-                overflowY: "auto",
-              }}>
-                {fetchState.analytics.highest_comment.body}
-              </div>
-            </div>
-          )}
+            )}
         </div>
       )}
 
       {/* ── Footer ── */}
-      <div style={{
-        marginTop: "3rem",
-        paddingTop: "1rem",
-        borderTop: "1px solid var(--border)",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: "0.5rem",
-      }}>
-        <span className="mono" style={{ fontSize: "0.6rem", color: "var(--text-dim)" }}>
-          REDDIT.ANALYTICS // PUBLIC JSON FEED + OAUTH API // NO ADS // NO TRACKING
+      <div
+        style={{
+          marginTop: "3rem",
+          paddingTop: "1rem",
+          borderTop: "1px solid var(--border)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "0.5rem",
+        }}
+      >
+        <span
+          className="mono"
+          style={{ fontSize: "0.6rem", color: "var(--text-dim)" }}
+        >
+          REDDIT.ANALYTICS // PUBLIC JSON FEED + OAUTH API // NO ADS // NO
+          TRACKING
         </span>
         <button
-          onClick={() => { clearAllCache(); window.location.reload(); }}
+          onClick={() => {
+            clearAllCache();
+            window.location.reload();
+          }}
           className="mono"
-          style={{ background: "none", border: "none", color: "var(--neon-red)", cursor: "pointer", fontSize: "0.6rem", textDecoration: "underline" }}
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--neon-red)",
+            cursor: "pointer",
+            fontSize: "0.6rem",
+            textDecoration: "underline",
+          }}
         >
           [CLR] CLEAR_CACHE
         </button>

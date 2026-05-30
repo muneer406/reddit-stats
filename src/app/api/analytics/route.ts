@@ -25,7 +25,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Missing Reddit OAuth credentials. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in .env.local",
+          error:
+            "Missing Reddit OAuth credentials. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in .env.local",
         },
         { status: 500 },
       );
@@ -82,9 +83,6 @@ export async function POST(req: NextRequest) {
           ? err.message
           : "Internal server error";
     console.error("[API] Unhandled error:", msg);
-    return NextResponse.json(
-      { success: false, error: msg },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }

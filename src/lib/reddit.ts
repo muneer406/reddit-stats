@@ -40,7 +40,9 @@ async function getAccessToken(
     return cachedToken.token;
   }
 
-  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
+    "base64",
+  );
 
   const res = await fetch("https://www.reddit.com/api/v1/access_token", {
     method: "POST",
