@@ -62,30 +62,38 @@ function Toggle({
   label: string;
 }) {
   return (
-    <label
+    <div
       style={{
         display: "flex",
         alignItems: "center",
+        justifyContent: "flex-end",
         gap: "0.75rem",
         cursor: "pointer",
+        width: "100%",
       }}
     >
-      <div className="toggle">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-        />
-        <div className="toggle-track" />
-        <div className="toggle-thumb" />
-      </div>
+      <label style={{ marginLeft: "auto" }}>
+        <div className="toggle">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => onChange(e.target.checked)}
+          />
+          <div className="toggle-track" />
+          <div className="toggle-thumb" />
+        </div>
+      </label>
       <span
         className="mono"
-        style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}
+        style={{
+          fontSize: "0.72rem",
+          color: "var(--text-secondary)",
+          textAlign: "right",
+        }}
       >
         {label}
       </span>
-    </label>
+    </div>
   );
 }
 

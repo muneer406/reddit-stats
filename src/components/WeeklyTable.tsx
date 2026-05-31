@@ -30,10 +30,16 @@ export default function WeeklyTable({ analytics, settings }: Props) {
               <th>Week Start</th>
               <th style={{ textAlign: "right" }}>Comments</th>
               <th style={{ textAlign: "right" }}>Likes</th>
-              <th style={{ textAlign: "right" }}>Keyword Mentions</th>
-              <th style={{ textAlign: "right" }}>Keyword Likes</th>
+              <th style={{ textAlign: "right" }}>
+                {settings.searchString} Mentions
+              </th>
+              <th style={{ textAlign: "right" }}>
+                {settings.searchString} Likes
+              </th>
               <th style={{ textAlign: "right" }}>Average Length</th>
-              <th style={{ textAlign: "right" }}>% Keyword</th>
+              <th
+                style={{ textAlign: "right" }}
+              >{`% ${settings.searchString}`}</th>
             </tr>
           </thead>
           <tbody>

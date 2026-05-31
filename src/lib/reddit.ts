@@ -1,6 +1,6 @@
 import type { RawComment } from "@/types";
 
-const USER_AGENT = "reddit-analytics-webapp/0.1 (by u/Murderous_monk)";
+const USER_AGENT = "reddit-stats-webapp/0.1 (by u/Murderous_monk)";
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 

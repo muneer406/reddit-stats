@@ -4,7 +4,11 @@ import { formatWeekDisplay } from "@/lib/analytics";
 
 interface Props {
   analytics: AnalyticsResult;
-  settings: { weeklyCommentGoal: number; weeklyKeywordGoal: number };
+  settings: {
+    weeklyCommentGoal: number;
+    weeklyKeywordGoal: number;
+    searchString?: string;
+  };
   currentWeek: string;
 }
 
@@ -61,7 +65,7 @@ export default function InsightsPanel({
           : "var(--neon-amber)",
     },
     {
-      label: "Keyword Goal Status",
+      label: `${settings.searchString || "Keyword"} Goal Status`,
       val: `${cwData?.keyword || 0}/${settings.weeklyKeywordGoal}`,
       color:
         (cwData?.keyword || 0) >= settings.weeklyKeywordGoal

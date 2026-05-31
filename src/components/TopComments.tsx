@@ -1,20 +1,22 @@
 "use client";
+import { useState } from "react";
 import { AnalyticsResult } from "@/types";
 import { getCurrentWeek, getLastWeek } from "@/lib/analytics";
 
 interface Props {
   analytics: AnalyticsResult;
-  keywordOnly?: boolean;
   limit?: number;
   timeframe?: "week" | "all"; // 'week' = this week, 'all' = overall
+  searchString?: string;
 }
 
 export default function TopComments({
   analytics,
-  keywordOnly,
   limit = 10,
   timeframe = "week",
+  searchString,
 }: Props) {
+  const [onlyKeyword, setOnlyKeyword] = useState(false);
   const cw = getCurrentWeek();
   const lw = getLastWeek();
 
@@ -22,7 +24,7 @@ export default function TopComments({
     timeframe === "all"
       ? analytics.processed
       : analytics.processed.filter((c) => c.week === cw);
-  if (keywordOnly) filtered = filtered.filter((c) => c.keyword);
+  if (onlyKeyword) filtered = filtered.filter((c) => c.keyword);
 
   const sorted = [...filtered].sort((a, b) => b.ups - a.ups).slice(0, limit);
   if (sorted.length === 0) return null;
@@ -40,18 +42,49 @@ export default function TopComments({
     return "var(--text-primary)";
   }
 
-  const title = `${keywordOnly ? "Top Keyword Comments" : "Top Comments"} // ${timeframe === "all" ? "Overall" : "This Week"}`;
+  const title = `${onlyKeyword ? `Top ${searchString || "Keyword"} Comments` : "Top Comments"} // ${timeframe === "all" ? "Overall" : "This Week"}`;
 
   return (
     <div className="panel fade-up">
       <div className="panel-title">{title}</div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: "0.6rem",
+          marginBottom: "0.5rem",
+        }}
+      >
+        <label className="toggle" style={{ marginLeft: 0 }}>
+          <input
+            type="checkbox"
+            checked={onlyKeyword}
+            onChange={() => setOnlyKeyword((v) => !v)}
+          />
+          <span className="toggle-track" />
+          <span className="toggle-thumb" />
+        </label>
+        <div
+          className="mono"
+          style={{
+            fontSize: "0.72rem",
+            color: "var(--text-secondary)",
+            textAlign: "right",
+          }}
+        >
+          {searchString ? `${searchString} only` : "Keyword only"}
+        </div>
+      </div>
       <div style={{ overflowX: "auto" }}>
         <table className="data-table">
           <thead>
             <tr>
               <th>#</th>
               <th style={{ textAlign: "right" }}>LIKES</th>
-              <th style={{ textAlign: "center" }}>Keyword</th>
+              <th style={{ textAlign: "center" }}>
+                {searchString || "Keyword"}
+              </th>
               <th>SUBREDDIT</th>
               <th>DATE</th>
               <th>PREVIEW</th>
@@ -104,7 +137,10 @@ export default function TopComments({
                     {c.subreddit}
                   </span>
                 </td>
-                <td className="mono" style={{ color: dateColor(c.date) }}>
+                <td
+                  className="mono"
+                  style={{ color: dateColor(c.date), whiteSpace: "nowrap" }}
+                >
                   {c.date}
                 </td>
                 <td

@@ -148,7 +148,7 @@ export default function CurrentWeekPanel({ analytics, settings }: Props) {
               letterSpacing: "0.1em",
             }}
           >
-            KEYWORD_GOAL
+            {settings.searchString} Goal
           </div>
           <ProgBar
             val={keyword}

@@ -386,16 +386,19 @@ body::after {
 /* ── Progress bar ── */
 .prog-track {
   height: 4px;
-  background: var(--bg-void);
+  background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border);
   border-radius: 0;
   overflow: hidden;
   position: relative;
 }
 .prog-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
   height: 100%;
-  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-  position: relative;
+  transition: width 0.5s ease-out;
 }
 .prog-fill::after {
   /* removed end-cap highlight to show full fractional fills cleanly */

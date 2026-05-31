@@ -6,6 +6,7 @@ interface Props {
   usernames: string[];
   errors?: { username: string; error: string }[];
   stats?: { total_fetched: number; elapsed_ms: number };
+  searchString?: string;
 }
 
 function StatCard({
@@ -34,6 +35,7 @@ export default function GlobalStats({
   usernames,
   errors,
   stats,
+  searchString,
 }: Props) {
   const avgLikes = analytics.total_comments
     ? (analytics.total_likes / analytics.total_comments).toFixed(2)
@@ -109,12 +111,12 @@ export default function GlobalStats({
         />
         <StatCard
           val={analytics.keyword_comments.toLocaleString()}
-          label={`Keyword Mentions`}
+          label={`${searchString || "Keyword"} Mentions`}
           color="var(--neon-amber)"
         />
         <StatCard
           val={`${kwPct}%`}
-          label="Keyword Rate"
+          label={`${searchString || "Keyword"} Rate`}
           color="var(--neon-lime)"
         />
         <StatCard
